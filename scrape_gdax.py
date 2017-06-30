@@ -86,7 +86,12 @@ def write_history_csv(history):
 
         for bar in history:
             # Convert timestamp to ISO date for use with backtrader
-            date = datetime.datetime.fromtimestamp(bar[0]).isoformat(' ')
+            try:
+                date = datetime.datetime.fromtimestamp(bar[0]).isoformat(' ')
+            except TypeError as error:
+                logger.warning('Skipping row: {}: {}'.format(error, bar))
+                continue
+
             bar[0] = date
 
             writer.writerow(bar)
