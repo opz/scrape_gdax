@@ -72,16 +72,14 @@ def get_history(date, product=PRODUCT, granularity=GRANULARITY, pages=PAGES):
     return history
 
 
-def write_history_csv(history):
+def write_history_csv(filename, history):
     """
     Write GDAX price history to CSV file
 
     :param history: GDAX price history
     """
 
-    csv_name = 'gdax_history_{}_{}.csv'.format(PRODUCT, GRANULARITY)
-
-    with open(csv_name, 'w', newline='') as csvfile:
+    with open(filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
 
         for bar in history:
@@ -137,4 +135,6 @@ if __name__ == '__main__':
     # Get history and write to CSV
     history = get_history(rounded_now_utc, product, granularity, pages)
 
-    write_history_csv(history)
+    filename = 'gdax_history_{}_{}.csv'.format(product, granularity)
+
+    write_history_csv(filename, history)
