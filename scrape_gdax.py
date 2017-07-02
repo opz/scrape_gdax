@@ -128,6 +128,13 @@ if __name__ == '__main__':
     # Most recent price to start from
     now_utc = datetime.datetime.now(datetime.timezone.utc)
 
-    history = get_history(now_utc, product, granularity, pages)
+    # Round start date based on chosen granularity
+    now_timestamp = now_utc.timestamp()
+    time_delta = now_timestamp % granularity
+    now_timestamp -= time_delta
+    rounded_now_utc = datetime.datetime.fromtimestamp(now_timestamp)
+
+    # Get history and write to CSV
+    history = get_history(rounded_now_utc, product, granularity, pages)
 
     write_history_csv(history)
