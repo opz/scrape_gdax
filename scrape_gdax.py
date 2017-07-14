@@ -5,6 +5,8 @@ import datetime
 import logging
 import time
 
+from requests.exceptions import ConnectionError
+
 import gdax
 
 logger = logging.getLogger('scrape_gdax')
@@ -20,6 +22,9 @@ PAGES = 100
 
 # GDAX rate limit of 3 requests per second with a little extra padding
 RATE_LIMIT = 1.0 / 3.0 + 0.5
+
+# Maximum number of retry attempts after a connection error
+MAX_RETRIES = 5
 
 
 def get_history(date, product, granularity=GRANULARITY, pages=PAGES):
@@ -54,8 +59,15 @@ def get_history(date, product, granularity=GRANULARITY, pages=PAGES):
         logger.info('{} to {}'.format(end, start))
         logger.info('({:d}/{:d})'.format(i + 1, pages))
 
-        new_history = client.get_product_historic_rates(
-                product, start=start_iso, end=end_iso, granularity=granularity)
+        for j in range(MAX_RETRIES):
+            try:
+                new_history = client.get_product_historic_rates(
+                        product, start=start_iso, end=end_iso, granularity=granularity)
+                break
+
+            # Retry on connection error
+            except ConnectionError as error:
+                logger.warning(error)
 
         # If results are not a list, most likely an API error occurred
         try:
