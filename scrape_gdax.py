@@ -9,11 +9,8 @@ import gdax
 
 logger = logging.getLogger('scrape_gdax')
 
-# GDAX product to query
-PRODUCT = 'ETH-USD'
-
-# 10 second price intervals
-GRANULARITY = 10
+# 60 second price intervals
+GRANULARITY = 60
 
 # Maximum results per page
 MAX_RESULTS = 200
@@ -25,11 +22,13 @@ PAGES = 100
 RATE_LIMIT = 1.0 / 3.0 + 0.5
 
 
-def get_history(date, product=PRODUCT, granularity=GRANULARITY, pages=PAGES):
+def get_history(date, product, granularity=GRANULARITY, pages=PAGES):
     """
     Get GDAX price history
 
     :param date: datetime object to start from
+    :param product: the GDAX product to get the history of
+    :param granularity: granularity of history in seconds
     :param pages: number of pages to retrieve, results per page vary
     :returns: GDAX price history
     :rtype: List
@@ -101,27 +100,37 @@ if __name__ == '__main__':
 
     import sys
     import os
+    import argparse
 
-    if len(sys.argv) <= 1:
-        filename = os.path.basename(__file__)
-        print('Usage: ./{} <Product> <Granularity> <Pages>'.format(filename))
-        print('Example: ./{} ETH-USD 10 1000'.format(filename))
-        exit()
+    DESCRIPTION = 'Scrape GDAX data and output to a CSV.'
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+
+    PRODUCT_ARG = 'product'
+    PRODUCT_HELP = 'GDAX product to scrape data for. E.g. BTC-USD.'
+    parser.add_argument(PRODUCT_ARG, help=PRODUCT_HELP)
+
+    PAGES_ARG = 'pages'
+    PAGES_HELP = ('The number of pages of data to scrape.'
+            ' Each page has a maximum of {:d} results.').format(MAX_RESULTS)
+    parser.add_argument(PAGES_ARG, type=int, help=PAGES_HELP)
+
+    GRANULARITY_ARG = 'g'
+    GRANULARITY_META = 'granularity'
+    GRANULARITY_DEFAULT = GRANULARITY
+    GRANULARITY_HELP = ('Granularity of data in seconds.'
+            ' Default is {:d}.').format(GRANULARITY_DEFAULT)
+    parser.add_argument('-{}'.format(GRANULARITY_ARG),
+            metavar=GRANULARITY_META, type=int, default=GRANULARITY_DEFAULT,
+            help=GRANULARITY_HELP)
+
+    args = parser.parse_args()
+
+    product = getattr(args, PRODUCT_ARG)
+    pages = getattr(args, PAGES_ARG)
+    granularity = getattr(args, GRANULARITY_ARG)
 
     try:
-        product = sys.argv[1]
-    except IndexError:
-        product = PRODUCT
 
-    try:
-        granularity = int(sys.argv[2])
-    except (IndexError, ValueError):
-        granularity = GRANULARITY
-
-    try:
-        pages = int(sys.argv[3])
-    except (IndexError, ValueError):
-        pages = PAGES
 
     # Most recent price to start from
     now_utc = datetime.datetime.now(datetime.timezone.utc)
