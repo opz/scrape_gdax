@@ -131,12 +131,21 @@ if __name__ == '__main__':
     parser.add_argument('-{}'.format(STARTDATE_ARG), metavar=STARTDATE_META,
             help=STARTDATE_HELP)
 
+    OUTPUT_ARG = 'o'
+    OUTPUT_META = 'output-file'
+    OUTPUT_DEFAULT = 'gdax_history_{product}_{granularity}.csv'
+    OUTPUT_HELP = 'CSV file output. Default is {}.'.format(OUTPUT_DEFAULT)
+    parser.add_argument('-{}'.format(OUTPUT_ARG), metavar=OUTPUT_META,
+            default=OUTPUT_DEFAULT, help=OUTPUT_HELP)
+
     args = parser.parse_args()
 
     product = getattr(args, PRODUCT_ARG)
     pages = getattr(args, PAGES_ARG)
     granularity = getattr(args, GRANULARITY_ARG)
     start_date = getattr(args, STARTDATE_ARG)
+    filename = getattr(args, OUTPUT_ARG)
+    filename = filename.format(product=product, granularity=granularity)
 
     # Convert ISO 8601 datetime to datetime object
     try:
@@ -162,7 +171,6 @@ if __name__ == '__main__':
     rounded_start_utc = datetime.datetime.fromtimestamp(start_timestamp)
 
     # Get history and write to CSV
-    filename = 'gdax_history_{}_{}.csv'.format(product, granularity)
     history = get_history(rounded_start_utc, product, granularity, pages)
 
     write_history_csv(filename, history)
