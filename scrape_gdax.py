@@ -123,27 +123,46 @@ if __name__ == '__main__':
             metavar=GRANULARITY_META, type=int, default=GRANULARITY_DEFAULT,
             help=GRANULARITY_HELP)
 
+    STARTDATE_ARG = 's'
+    STARTDATE_META = 'start-date'
+    STARTDATE_HELP = ('Date and time to start scraping backwards from.'
+            ' Uses the ISO 8601 format (E.g. 2017-07-14T10:19:32).'
+            ' Default is the current date and time.')
+    parser.add_argument('-{}'.format(STARTDATE_ARG), metavar=STARTDATE_META,
+            help=STARTDATE_HELP)
+
     args = parser.parse_args()
 
     product = getattr(args, PRODUCT_ARG)
     pages = getattr(args, PAGES_ARG)
     granularity = getattr(args, GRANULARITY_ARG)
+    start_date = getattr(args, STARTDATE_ARG)
 
+    # Convert ISO 8601 datetime to datetime object
     try:
+        start_utc = datetime.datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S')
+    except ValueError:
+        print('Invalid datetime format: {}'.format(start_date))
+        exit()
+    except TypeError:
+        # Use current time if no datetime was supplied
+        start_utc = datetime.datetime.now(datetime.timezone.utc)
 
+    is_tzinfo = start_utc.tzinfo is None
+    is_utoffset = is_tzinfo or start_utc.tzinfo.utoffset(start_utc) is None
 
-    # Most recent price to start from
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    # Set timezone if no timezone was supplied
+    if is_utoffset:
+        start_utc.replace(tzinfo=datetime.timezone.utc)
 
     # Round start date based on chosen granularity
-    now_timestamp = now_utc.timestamp()
-    time_delta = now_timestamp % granularity
-    now_timestamp -= time_delta
-    rounded_now_utc = datetime.datetime.fromtimestamp(now_timestamp)
+    start_timestamp = start_utc.timestamp()
+    time_delta = start_timestamp % granularity
+    start_timestamp -= time_delta
+    rounded_start_utc = datetime.datetime.fromtimestamp(start_timestamp)
 
     # Get history and write to CSV
-    history = get_history(rounded_now_utc, product, granularity, pages)
-
     filename = 'gdax_history_{}_{}.csv'.format(product, granularity)
+    history = get_history(rounded_start_utc, product, granularity, pages)
 
     write_history_csv(filename, history)
